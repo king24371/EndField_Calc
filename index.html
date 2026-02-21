@@ -100,7 +100,7 @@
     </div>
 
     <script>
-        function calculate() {
+function calculate() {
             const priceX = parseFloat(document.getElementById("priceX").value);
             const priceY = parseFloat(document.getElementById("priceY").value);
             const stockX = parseInt(document.getElementById("stockX").value);
@@ -110,6 +110,7 @@
             if (
                 isNaN(priceX) || isNaN(priceY) ||
                 isNaN(stockX) || isNaN(stockY) ||
+                isNaN(budget)
             ) {
                 document.getElementById("output").innerHTML = "請填寫所有欄位";
                 return;
@@ -121,38 +122,40 @@
             let smallestDiff = Infinity;
 
             for (let x = 0; x <= stockX; x++) {
-                for (let y = 0; y <= stockY; y++) {
 
-                    let money = x * priceX + y * priceY;
-                    if (money > budget) continue;
+                // 計算在此 x 下 y 的最大可能值
+                let maxYByBudget = Math.floor((budget - x * priceX) / priceY);
+                if (maxYByBudget < 0) continue;
 
-                    let balanceDiff = Math.abs((stockX - x) - (stockY - y));
+                let y = Math.min(stockY, maxYByBudget);
 
-                    if (balanceDiff < smallestDiff ||
-                        (balanceDiff === smallestDiff && money > bestMoney)) {
+                let money = x * priceX + y * priceY;
+                let balanceDiff = Math.abs((stockX - x) - (stockY - y));
 
-                        smallestDiff = balanceDiff;
-                        bestMoney = money;
-                        bestX = x;
-                        bestY = y;
-                    }
+                if (balanceDiff < smallestDiff ||
+                    (balanceDiff === smallestDiff && money > bestMoney)) {
+
+                    smallestDiff = balanceDiff;
+                    bestMoney = money;
+                    bestX = x;
+                    bestY = y;
                 }
             }
 
             if (smallestDiff === Infinity) {
                 document.getElementById("output").innerHTML =
-                    "⚠ 在此容許差距與預算下沒有可行解";
+                    "⚠ 在此預算下沒有可行解";
                 return;
             }
 
             document.getElementById("output").innerHTML = `
-        電池數量 (x)： <b>${bestX}</b><br>
-        藥品數量 (y)： <b>${bestY}</b><br>
-        剩餘庫存差距： <b>${smallestDiff}</b><br>
-        總金額： <b>${bestMoney.toLocaleString()}</b><br>
-        與預算差額： <b>${(budget - bestMoney).toLocaleString()}</b>
-    `;
-        }
+                電池數量 (x)： <b>${bestX}</b><br>
+                藥品數量 (y)： <b>${bestY}</b><br>
+                剩餘庫存差距： <b>${smallestDiff}</b><br>
+                總金額： <b>${bestMoney.toLocaleString()}</b><br>
+                與預算差額： <b>${(budget - bestMoney).toLocaleString()}</b>
+            `;
+}
     </script>
 
 </body>
