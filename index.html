@@ -1,4 +1,3 @@
-\
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -68,15 +67,6 @@
             padding: 15px;
             border-radius: 8px;
         }
-
-        .slider-container {
-            margin-bottom: 15px;
-        }
-
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-        }
     </style>
 </head>
 <body>
@@ -86,11 +76,6 @@
         <div class="header">
             <img src="Arknights_Endfield_Zh.svg.png" alt="終末地圖示">
             <h2>終末地據點庫存最佳分配計算器</h2>
-        </div>
-
-        <div class="note">
-            ※ 總貨量為下圖數值，並非基地庫存量
-            <img src="note.jpg" alt="備註圖示">
         </div>
 
         <label>電池單價：</label>
@@ -105,19 +90,8 @@
         <label>藥品目前庫存：</label>
         <input type="number" id="stockY">
 
-        <label>總貨量：</label>
-        <input type="number" id="totalQty">
-
         <label>據點金額（上限）：</label>
         <input type="number" id="budget">
-
-        <div class="slider-container">
-            <div class="slider-label">
-                <span>允許的剩餘庫存差距：</span>
-                <span id="toleranceValue">0</span>
-            </div>
-            <input type="range" id="tolerance" min="0" max="10000" value="0">
-        </div>
 
         <button onclick="calculate()">計算</button>
 
@@ -126,27 +100,16 @@
     </div>
 
     <script>
-        const toleranceSlider = document.getElementById("tolerance");
-        const toleranceDisplay = document.getElementById("toleranceValue");
-
-        // 更新滑桿數值顯示
-        toleranceSlider.addEventListener("input", () => {
-            toleranceDisplay.textContent = toleranceSlider.value;
-            calculate(); // 即時更新結果
-        });
-
         function calculate() {
             const priceX = parseFloat(document.getElementById("priceX").value);
             const priceY = parseFloat(document.getElementById("priceY").value);
             const stockX = parseInt(document.getElementById("stockX").value);
             const stockY = parseInt(document.getElementById("stockY").value);
-            const totalQty = parseInt(document.getElementById("totalQty").value);
             const budget = parseFloat(document.getElementById("budget").value);
-            const tolerance = parseInt(document.getElementById("tolerance").value);
 
             if (
-                isNaN(priceX) || isNaN(priceY) || isNaN(stockX) || isNaN(stockY) ||
-                isNaN(totalQty) || isNaN(budget) || isNaN(tolerance)
+                isNaN(priceX) || isNaN(priceY) ||
+                isNaN(stockX) || isNaN(stockY) ||
             ) {
                 document.getElementById("output").innerHTML = "請填寫所有欄位";
                 return;
@@ -155,39 +118,40 @@
             let bestX = 0;
             let bestY = 0;
             let bestMoney = 0;
+            let smallestDiff = Infinity;
 
-            for (let x = 0; x <= totalQty; x++) {
-                let y = totalQty - x;
-                let money = x * priceX + y * priceY;
+            for (let x = 0; x <= stockX; x++) {
+                for (let y = 0; y <= stockY; y++) {
 
-                if (money <= budget) {
+                    let money = x * priceX + y * priceY;
+                    if (money > budget) continue;
+
                     let balanceDiff = Math.abs((stockX - x) - (stockY - y));
 
-                    if (balanceDiff <= tolerance) {
-                        if (money > bestMoney) {
-                            bestMoney = money;
-                            bestX = x;
-                            bestY = y;
-                        }
+                    if (balanceDiff < smallestDiff ||
+                        (balanceDiff === smallestDiff && money > bestMoney)) {
+
+                        smallestDiff = balanceDiff;
+                        bestMoney = money;
+                        bestX = x;
+                        bestY = y;
                     }
                 }
             }
 
-            if (bestMoney === 0) {
+            if (smallestDiff === Infinity) {
                 document.getElementById("output").innerHTML =
                     "⚠ 在此容許差距與預算下沒有可行解";
                 return;
             }
 
-            const remainingDiff = Math.abs((stockX - bestX) - (stockY - bestY));
-
             document.getElementById("output").innerHTML = `
-            電池數量 (x)： <b>${bestX}</b><br>
-            藥品數量 (y)： <b>${bestY}</b><br>
-            剩餘庫存差距： <b>${remainingDiff}</b><br>
-            總金額： <b>${bestMoney.toLocaleString()}</b><br>
-            與預算差額： <b>${(budget - bestMoney).toLocaleString()}</b>
-        `;
+        電池數量 (x)： <b>${bestX}</b><br>
+        藥品數量 (y)： <b>${bestY}</b><br>
+        剩餘庫存差距： <b>${smallestDiff}</b><br>
+        總金額： <b>${bestMoney.toLocaleString()}</b><br>
+        與預算差額： <b>${(budget - bestMoney).toLocaleString()}</b>
+    `;
         }
     </script>
 
